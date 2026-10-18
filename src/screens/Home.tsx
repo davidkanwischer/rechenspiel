@@ -17,7 +17,7 @@ export default function Home({ progress, onPuzzle, onDuel, onRewards, onRules }:
         <h1>{GAME_NAME}</h1>
         <p>Triff die Zahl.</p>
       </div>
-      <XpBar xp={progress.xp} />
+      <XpBar xp={progress.xp} showGoal />
       <button className="btn primary" onClick={onPuzzle}>
         <span className="emoji">🧩</span>
         <span>

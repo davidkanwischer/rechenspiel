@@ -10,15 +10,18 @@ export function throwsFor(target: number): number {
   return 6
 }
 
-export function randomTarget(rng: Rng = Math.random): number {
-  // gleichmäßig über die vier Wurf-Stufen verteilt, damit alle Längen vorkommen
-  const ranges: [number, number][] = [
-    [20, 60],
-    [61, 150],
-    [151, 300],
-    [301, 500],
-  ]
-  const [a, b] = ranges[Math.floor(rng() * ranges.length)]
+export function randomTarget(rng: Rng = Math.random, max = 500): number {
+  // gleichmäßig über die Wurf-Stufen verteilt, damit alle Längen vorkommen
+  const ranges = (
+    [
+      [20, 60],
+      [61, 150],
+      [151, 300],
+      [301, 500],
+    ] as [number, number][]
+  ).filter(([a]) => a <= max)
+  const [a, rawB] = ranges[Math.floor(rng() * ranges.length)]
+  const b = Math.min(rawB, max)
   return a + Math.floor(rng() * (b - a + 1))
 }
 

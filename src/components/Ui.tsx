@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { levelFromXp, rewardLabel, xpForLevel, type DiceId, type Reward } from '../core/progress'
+import { levelFromXp, nextReward, rewardLabel, rewardsFor, xpForLevel, type DiceId, type Reward } from '../core/progress'
 
 export function TopBar({ title, onBack, right }: { title: string; onBack: () => void; right?: ReactNode }) {
   return (
@@ -13,11 +13,22 @@ export function TopBar({ title, onBack, right }: { title: string; onBack: () => 
   )
 }
 
-export function XpBar({ xp }: { xp: number }) {
+const REWARD_ICON: Record<Reward['kind'], string> = { theme: '🎨', dice: '🎲', joker: '💡', op: '➗' }
+
+export function XpBar({ xp, showGoal }: { xp: number; showGoal?: boolean }) {
   const level = levelFromXp(xp)
   const from = xpForLevel(level)
   const to = xpForLevel(level + 1)
   const pct = Math.min(100, ((xp - from) / (to - from)) * 100)
+
+  // Fortschritt seit der letzten Belohnung bis zur nächsten
+  const goal = nextReward(level)
+  let prev = level
+  while (prev > 1 && rewardsFor(prev).length === 0) prev--
+  const goalFrom = xpForLevel(prev)
+  const goalTo = xpForLevel(goal.level)
+  const goalPct = Math.min(100, ((xp - goalFrom) / (goalTo - goalFrom)) * 100)
+
   return (
     <div className="xp">
       <div className="xp-head">
@@ -29,6 +40,23 @@ export function XpBar({ xp }: { xp: number }) {
       <div className="bar">
         <div style={{ width: `${pct}%` }} />
       </div>
+      {showGoal && (
+        <div className="goal">
+          <span className="goal-icon">{REWARD_ICON[goal.rewards[0].kind]}</span>
+          <div className="goal-body">
+            <div className="goal-head">
+              <span>
+                <small>Nächstes Ziel · Stufe {goal.level}</small>
+                {goal.rewards.map(rewardLabel).join(' + ')}
+              </span>
+              <span className="goal-left">noch {goalTo - xp} XP</span>
+            </div>
+            <div className="bar thin">
+              <div style={{ width: `${goalPct}%` }} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

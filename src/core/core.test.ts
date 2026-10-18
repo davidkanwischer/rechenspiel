@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { evaluate, evaluatePartial } from './expr'
 import { solve } from './solver'
 import { generatePuzzle, type Unlocks } from './generator'
-import { addXp, initialProgress, levelFromXp, xpForLevel } from './progress'
+import { addXp, initialProgress, levelFromXp, nextReward, xpForLevel } from './progress'
 import { compare, randomTarget, rollDie, throwsFor } from './duel'
 import { botChoice, type BotLevel } from './bot'
 
@@ -68,12 +68,17 @@ describe('progress', () => {
   it('Stufen und Belohnungen', () => {
     expect(levelFromXp(0)).toBe(1)
     expect(levelFromXp(xpForLevel(5))).toBe(5)
-    const { progress, levelUps } = addXp(initialProgress(), xpForLevel(5))
-    expect(levelUps).toEqual([2, 3, 4, 5])
+    const { progress, levelUps } = addXp(initialProgress(), xpForLevel(7))
+    expect(levelUps).toEqual([2, 3, 4, 5, 6, 7])
     expect(progress.unlocks.div).toBe(true)
     expect(progress.themes).toContain('ozean')
-    expect(progress.dice).toContain('holz')
-    expect(progress.jokers).toBe(3)
+    expect(progress.dice).not.toContain('holz')
+    expect(progress.jokers).toBe(2)
+  })
+  it('nächstes Ziel', () => {
+    expect(nextReward(1).level).toBe(3)
+    expect(nextReward(7).level).toBe(9)
+    expect(nextReward(46).level).toBe(50)
   })
 })
 
@@ -83,6 +88,13 @@ describe('duel', () => {
     expect(throwsFor(100)).toBe(4)
     expect(throwsFor(200)).toBe(5)
     expect(throwsFor(450)).toBe(6)
+  })
+  it('Zielzahl gegen den Bot höchstens 150', () => {
+    for (let i = 0; i < 1000; i++) {
+      const t = randomTarget(Math.random, 150)
+      expect(t).toBeGreaterThanOrEqual(20)
+      expect(t).toBeLessThanOrEqual(150)
+    }
   })
   it('Wertung: drüber verliert, beide drüber → weniger drüber gewinnt', () => {
     expect(compare(48, 53, 50)).toBe(1)

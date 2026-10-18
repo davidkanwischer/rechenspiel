@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from 'react'
 import {
   DICE,
   initialProgress,
+  LAST_TABLE_LEVEL,
   levelFromXp,
   rewardLabel,
   REWARDS,
@@ -87,9 +88,9 @@ export default function Rewards({ progress, setProgress, onBack }: Props) {
             </div>
           )
         })}
-        <div className={`list-item${level > 30 ? ' done' : ' locked'}`}>
-          <span className="lvl">31+</span>
-          <span>Jede Stufe: 1× Hinweis-Joker</span>
+        <div className={`list-item${level > LAST_TABLE_LEVEL ? ' done' : ' locked'}`}>
+          <span className="lvl">50+</span>
+          <span>Alle 5 Stufen: 1× Hinweis-Joker</span>
         </div>
       </div>
 

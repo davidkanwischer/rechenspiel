@@ -14,17 +14,19 @@ interface Props {
 
 type Phase = 'roll' | 'rolling' | 'choose' | 'done'
 
-const BOT_XP = { leicht: 15, mittel: 25, schwer: 40 } as const
+const BOT_XP = { leicht: 8, mittel: 14, schwer: 22 } as const
 const BOT_NAME = { leicht: 'Bot (leicht)', mittel: 'Bot (mittel)', schwer: 'Bot (schwer)' } as const
+const BOT_MAX_TARGET = 150
 
-function newGame(starter: number) {
-  const target = randomTarget()
+function newGame(starter: number, maxTarget: number) {
+  const target = randomTarget(Math.random, maxTarget)
   return { target, n: throwsFor(target), cells: [[], []] as number[][], cur: starter, phase: 'roll' as Phase, roll: null as number | null }
 }
 
 export default function DuelScreen({ opponent, diceSkin, gainXp, onBack }: Props) {
   const [gameNo, setGameNo] = useState(0)
-  const [g, setG] = useState(() => newGame(0))
+  const maxTarget = opponent.kind === 'bot' ? BOT_MAX_TARGET : 500
+  const [g, setG] = useState(() => newGame(0, maxTarget))
   const [face, setFace] = useState<number | null>(null)
   const [lastBot, setLastBot] = useState<Factor | null>(null)
 
@@ -43,7 +45,7 @@ export default function DuelScreen({ opponent, diceSkin, gainXp, onBack }: Props
     if (done && opponent.kind === 'bot') {
       const [a, b] = cells.map((c) => c.reduce((x, y) => x + y, 0))
       const res = compare(a, b, g.target)
-      const xp = res === 1 ? BOT_XP[opponent.level] : res === 0 ? Math.round(BOT_XP[opponent.level] / 2) : 5
+      const xp = res === 1 ? BOT_XP[opponent.level] : res === 0 ? Math.round(BOT_XP[opponent.level] / 2) : 2
       gainXp(xp, (p) => ({ ...p, duelsPlayed: p.duelsPlayed + 1, duelsWon: p.duelsWon + (res === 1 ? 1 : 0) }))
     }
   }
@@ -90,7 +92,7 @@ export default function DuelScreen({ opponent, diceSkin, gainXp, onBack }: Props
   const again = () => {
     const next = gameNo + 1
     setGameNo(next)
-    setG(newGame(next % 2))
+    setG(newGame(next % 2, maxTarget))
     setFace(null)
     setLastBot(null)
   }

@@ -28,31 +28,38 @@ export type Reward =
   | { kind: 'joker'; count: number }
   | { kind: 'op'; id: keyof Unlocks }
 
-/** Belohnung beim Erreichen der jeweiligen Stufe. Ab Stufe 31 gibt es je einen Joker. */
+/** Belohnung beim Erreichen der jeweiligen Stufe. Ab Stufe 46 gibt es alle 5 Stufen einen Joker. */
 export const REWARDS: Record<number, Reward[]> = {
-  2: [{ kind: 'joker', count: 2 }],
-  3: [{ kind: 'theme', id: 'ozean' }],
-  4: [{ kind: 'dice', id: 'holz' }],
-  5: [{ kind: 'op', id: 'div' }],
-  6: [{ kind: 'joker', count: 2 }],
-  7: [{ kind: 'theme', id: 'hell' }],
-  8: [{ kind: 'dice', id: 'neon' }],
-  10: [{ kind: 'op', id: 'sq' }, { kind: 'joker', count: 2 }],
-  12: [{ kind: 'theme', id: 'wald' }],
-  14: [{ kind: 'dice', id: 'marmor' }],
-  15: [{ kind: 'op', id: 'sqrt' }],
-  17: [{ kind: 'joker', count: 3 }],
-  18: [{ kind: 'theme', id: 'sunset' }],
-  21: [{ kind: 'theme', id: 'neon' }],
-  24: [{ kind: 'joker', count: 3 }],
-  25: [{ kind: 'dice', id: 'gold' }],
-  30: [{ kind: 'theme', id: 'gold' }, { kind: 'joker', count: 5 }],
+  3: [{ kind: 'joker', count: 1 }],
+  5: [{ kind: 'theme', id: 'ozean' }],
+  7: [{ kind: 'op', id: 'div' }],
+  9: [{ kind: 'dice', id: 'holz' }],
+  11: [{ kind: 'joker', count: 2 }],
+  13: [{ kind: 'theme', id: 'hell' }],
+  15: [{ kind: 'op', id: 'sq' }],
+  17: [{ kind: 'dice', id: 'neon' }],
+  20: [{ kind: 'theme', id: 'wald' }],
+  22: [{ kind: 'joker', count: 2 }],
+  25: [{ kind: 'op', id: 'sqrt' }],
+  28: [{ kind: 'dice', id: 'marmor' }],
+  31: [{ kind: 'theme', id: 'sunset' }],
+  35: [{ kind: 'theme', id: 'neon' }],
+  40: [{ kind: 'dice', id: 'gold' }],
+  45: [{ kind: 'theme', id: 'gold' }, { kind: 'joker', count: 3 }],
 }
+export const LAST_TABLE_LEVEL = 45
 
 export function rewardsFor(level: number): Reward[] {
   if (REWARDS[level]) return REWARDS[level]
-  if (level > 30) return [{ kind: 'joker', count: 1 }]
+  if (level > LAST_TABLE_LEVEL && level % 5 === 0) return [{ kind: 'joker', count: 1 }]
   return []
+}
+
+/** Nächste Stufe (über `level`), die eine Belohnung bringt. */
+export function nextReward(level: number): { level: number; rewards: Reward[] } {
+  let l = level + 1
+  while (rewardsFor(l).length === 0) l++
+  return { level: l, rewards: rewardsFor(l) }
 }
 
 export function rewardLabel(r: Reward): string {
@@ -71,7 +78,7 @@ export function rewardLabel(r: Reward): string {
 /** Gesamt-XP, die nötig sind, um Stufe `level` zu erreichen (Stufe 1 = 0 XP). */
 export function xpForLevel(level: number): number {
   const n = level - 1
-  return 60 * n + 15 * n * n
+  return 80 * n + 25 * n * n
 }
 
 export function levelFromXp(xp: number): number {
@@ -129,8 +136,8 @@ export function addXp(p: Progress, amount: number): { progress: Progress; levelU
 /** XP für ein gelöstes Rätsel. */
 export function puzzleXp(difficulty: number, seconds: number, usedJoker: boolean): number {
   let xp = 10 + difficulty * 4
-  if (seconds < 20) xp = Math.round(xp * 1.5)
-  else if (seconds < 45) xp = Math.round(xp * 1.2)
+  if (seconds < 20) xp = Math.round(xp * 1.3)
+  else if (seconds < 45) xp = Math.round(xp * 1.1)
   if (usedJoker) xp = Math.round(xp * 0.5)
   return xp
 }
