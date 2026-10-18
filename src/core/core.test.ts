@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { evaluate, evaluatePartial } from './expr'
 import { solve } from './solver'
 import { generatePuzzle, type Unlocks } from './generator'
-import { addXp, initialProgress, levelFromXp, nextReward, xpForLevel } from './progress'
+import { addXp, initialProgress, levelFromXp, mergeProgress, nextReward, xpForLevel } from './progress'
 import { compare, randomTarget, rollDie, throwsFor } from './duel'
 import { botChoice, type BotLevel } from './bot'
 
@@ -74,6 +74,17 @@ describe('progress', () => {
     expect(progress.themes).toContain('ozean')
     expect(progress.dice).not.toContain('holz')
     expect(progress.jokers).toBe(2)
+  })
+  it('Spielstände zusammenführen verliert nichts', () => {
+    const local = { ...initialProgress(), xp: 300, solved: 10, themes: ['nacht', 'ozean'] as const }
+    const remote = { ...initialProgress(), xp: 500, solved: 4, jokers: 4, dice: ['klassik', 'holz'] as const, unlocks: { div: true, sq: false, sqrt: false } }
+    const m = mergeProgress({ ...local, themes: [...local.themes] }, { ...remote, dice: [...remote.dice] })
+    expect(m.xp).toBe(500)
+    expect(m.solved).toBe(10)
+    expect(m.jokers).toBe(4)
+    expect(m.themes).toEqual(['nacht', 'ozean'])
+    expect(m.dice).toEqual(['klassik', 'holz'])
+    expect(m.unlocks.div).toBe(true)
   })
   it('nächstes Ziel', () => {
     expect(nextReward(1).level).toBe(3)

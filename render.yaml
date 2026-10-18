@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: zielzahl
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    headers:
+      - path: /sw.js
+        name: Cache-Control
+        value: no-cache
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false

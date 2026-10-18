@@ -708,3 +708,24 @@ button {
   font-size: 12px;
   color: var(--muted);
 }
+
+/* Formular */
+.input {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: 2px solid var(--bg3);
+  background: var(--bg2);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.bad-text {
+  color: var(--bad);
+}

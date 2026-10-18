@@ -7,9 +7,11 @@ interface Props {
   onDuel: () => void
   onRewards: () => void
   onRules: () => void
+  onAccount?: () => void
+  accountLabel: string
 }
 
-export default function Home({ progress, onPuzzle, onDuel, onRewards, onRules }: Props) {
+export default function Home({ progress, onPuzzle, onDuel, onRewards, onRules, onAccount, accountLabel }: Props) {
   return (
     <>
       <div className="home-title">
@@ -40,6 +42,11 @@ export default function Home({ progress, onPuzzle, onDuel, onRewards, onRules }:
           ❓ Regeln
         </button>
       </div>
+      {onAccount && (
+        <button className="btn center" onClick={onAccount}>
+          {accountLabel}
+        </button>
+      )}
     </>
   )
 }

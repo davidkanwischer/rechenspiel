@@ -163,3 +163,25 @@ export function saveProgress(p: Progress) {
     /* Speicher nicht verfügbar – Spiel läuft trotzdem */
   }
 }
+
+/** Zwei Spielstände zusammenführen (z. B. Handy-Stand + Konto-Stand): nichts geht verloren. */
+export function mergeProgress(local: Progress, remote: Progress): Progress {
+  const base = initialProgress()
+  const r: Progress = { ...base, ...remote, unlocks: { ...base.unlocks, ...remote.unlocks } }
+  const ahead = local.xp >= r.xp ? local : r
+  return {
+    ...local,
+    xp: Math.max(local.xp, r.xp),
+    jokers: ahead.jokers,
+    themes: [...new Set([...local.themes, ...r.themes])],
+    dice: [...new Set([...local.dice, ...r.dice])],
+    unlocks: {
+      div: local.unlocks.div || r.unlocks.div,
+      sq: local.unlocks.sq || r.unlocks.sq,
+      sqrt: local.unlocks.sqrt || r.unlocks.sqrt,
+    },
+    solved: Math.max(local.solved, r.solved),
+    duelsWon: Math.max(local.duelsWon, r.duelsWon),
+    duelsPlayed: Math.max(local.duelsPlayed, r.duelsPlayed),
+  }
+}
