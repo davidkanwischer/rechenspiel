@@ -23,6 +23,8 @@ import Track from './screens/Track'
 import Designs from './screens/Designs'
 import Rules from './screens/Rules'
 import Account, { type SyncState } from './screens/Account'
+import Invite from './screens/Invite'
+import { clearRef, pendingRef, qualifyReferral, QUALIFY_LEVEL, redeemInvite, WELCOME_XP } from './core/invite'
 
 export type Opponent = { kind: 'bot'; level: BotLevel } | { kind: 'local' }
 export type GainXp = (amount: number, extra?: (p: Progress) => Progress) => void
@@ -36,6 +38,7 @@ type Screen =
   | { id: 'designs' }
   | { id: 'rules' }
   | { id: 'account' }
+  | { id: 'invite' }
 
 export default function App() {
   const [progress, setProgress] = useState<Progress>(loadProgress)
@@ -116,6 +119,30 @@ export default function App() {
     return () => clearTimeout(t)
   }, [progress, user])
 
+  // Freunde einladen: Einladung beim ersten Anmelden einlösen, Stufe 3 an den Server melden
+  const [invited, setInvited] = useState(() => !!pendingRef())
+  const [welcome, setWelcome] = useState(false)
+  useEffect(() => {
+    const code = pendingRef()
+    if (!user || !code) return
+    redeemInvite(code)
+      .then((ok) => {
+        clearRef()
+        setInvited(false)
+        if (ok) {
+          gainXp(WELCOME_XP)
+          setWelcome(true)
+        }
+      })
+      .catch(() => {}) // später erneut versuchen
+  }, [user, gainXp])
+  const qualifySent = useRef(false)
+  useEffect(() => {
+    if (!user || sync !== 'saved' || level < QUALIFY_LEVEL || qualifySent.current) return
+    qualifySent.current = true
+    qualifyReferral().catch(() => (qualifySent.current = false))
+  }, [user, sync, level])
+
   const go = (s: Screen) => {
     setScreen(s)
     window.scrollTo(0, 0)
@@ -135,6 +162,8 @@ export default function App() {
             onDesigns={() => go({ id: 'designs' })}
             onRules={() => go({ id: 'rules' })}
             onAccount={cloudEnabled ? () => go({ id: 'account' }) : undefined}
+            onInvite={() => go({ id: 'invite' })}
+            invited={invited && cloudEnabled && !user}
             onJokerAd={watchJokerAd}
           />
         )}
@@ -149,9 +178,23 @@ export default function App() {
         {screen.id === 'designs' && <Designs progress={progress} setProgress={setProgress} onBack={home} />}
         {screen.id === 'rules' && <Rules onBack={home} />}
         {screen.id === 'account' && <Account user={user} sync={sync} onBack={home} />}
+        {screen.id === 'invite' && <Invite user={user} gainXp={gainXp} onAccount={() => go({ id: 'account' })} onBack={home} />}
       </div>
       <AdBanner />
       <AdHost />
+      {welcome && (
+        <div className="overlay" onClick={() => setWelcome(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="big-icon">🎁</div>
+            <h2>Willkommen!</h2>
+            <p>Du wurdest von einem Freund eingeladen.</p>
+            <div className="big-xp">+{WELCOME_XP} XP</div>
+            <button className="btn primary" onClick={() => setWelcome(false)}>
+              Los geht's
+            </button>
+          </div>
+        </div>
+      )}
       {levelUp && (
         <LevelUpModal
           level={levelUp.level}

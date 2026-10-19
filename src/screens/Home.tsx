@@ -1,5 +1,6 @@
 import { adsLeft, AD_JOKERS_PER_DAY, claimable, GAME_NAME, levelFromXp, nextReward, rewardLabel, rewardsFor, xpForLevel, type Progress } from '../core/progress'
 import { Die, JokerPill, LevelBadge, RewardIcon } from '../components/Ui'
+import { WELCOME_XP } from '../core/invite'
 
 interface Props {
   progress: Progress
@@ -10,6 +11,8 @@ interface Props {
   onDesigns: () => void
   onRules: () => void
   onAccount?: () => void
+  onInvite: () => void
+  invited: boolean
   onJokerAd: () => void
 }
 
@@ -33,6 +36,17 @@ export default function Home(props: Props) {
         <LevelBadge xp={progress.xp} />
         <JokerPill count={progress.jokers} onClick={left > 0 ? props.onJokerAd : undefined} />
       </div>
+
+      {props.invited && props.onAccount && (
+        <button className="card invite-banner chunky" onClick={props.onAccount}>
+          <span className="ico">🎁</span>
+          <span style={{ flex: 1 }}>
+            Du wurdest eingeladen!
+            <small>Konto erstellen und {WELCOME_XP} XP Startbonus holen</small>
+          </span>
+          <span className="muted">›</span>
+        </button>
+      )}
 
       <div className="hero">
         <div className="logo">100</div>
@@ -105,6 +119,9 @@ export default function Home(props: Props) {
       <div className="quick">
         <button className="btn" onClick={props.onDesigns}>
           <span className="ico">🎨</span>Designs
+        </button>
+        <button className="btn" onClick={props.onInvite}>
+          <span className="ico">👥</span>Freunde
         </button>
         <button className="btn" onClick={props.onRules}>
           <span className="ico">❓</span>Regeln

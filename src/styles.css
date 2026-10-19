@@ -1352,3 +1352,83 @@ button {
     transform: translateX(8px);
   }
 }
+
+/* Freunde einladen */
+.invite-hero {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+.invite-hero b {
+  font-size: 22px;
+  font-weight: 900;
+}
+.invite-hero p {
+  margin: 0;
+  font-size: 14px;
+}
+.invite-gift {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: var(--accent);
+  display: grid;
+  place-items: center;
+  font-size: 34px;
+  margin-bottom: 4px;
+}
+.invite-code {
+  text-align: center;
+}
+.invite-code small {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+.invite-code b {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  color: var(--primary);
+}
+.friend-list {
+  padding: 4px 14px;
+}
+.friend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 2px solid var(--card2);
+}
+.friend:last-child {
+  border-bottom: 0;
+}
+.friend small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.friend .opt-ico {
+  width: 38px;
+  height: 38px;
+  font-size: 18px;
+}
+.invite-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  border-color: var(--good);
+}
+.invite-banner .ico {
+  font-size: 26px;
+}
+.invite-banner small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
