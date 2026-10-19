@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { adsLeft, AD_JOKERS_PER_DAY, claimable, GAME_NAME, levelFromXp, nextReward, rewardLabel, rewardsFor, xpForLevel, type Progress } from '../core/progress'
 import { Die, JokerPill, LevelBadge, RewardIcon } from '../components/Ui'
 import { WELCOME_XP } from '../core/invite'
@@ -29,9 +30,14 @@ export default function Home(props: Props) {
   const to = xpForLevel(goal.level)
   const pct = Math.min(100, ((progress.xp - from) / (to - from)) * 100)
   const left = adsLeft(progress)
+  const [menu, setMenu] = useState(false)
+  const pick = (fn: () => void) => () => {
+    setMenu(false)
+    fn()
+  }
 
   return (
-    <>
+    <div className="home">
       <div className="top">
         <LevelBadge xp={progress.xp} />
         <JokerPill count={progress.jokers} onClick={left > 0 ? props.onJokerAd : undefined} />
@@ -103,36 +109,53 @@ export default function Home(props: Props) {
         <span className="go">›</span>
       </button>
 
-      {left > 0 && (
-        <button className="card video-offer chunky" onClick={props.onJokerAd}>
-          <span className="ico">🎬</span>
-          <span style={{ flex: 1 }}>
-            Gratis-Joker
-            <small>
-              Kurzes Video ansehen · {left}/{AD_JOKERS_PER_DAY} heute
-            </small>
-          </span>
-          <span className="pill">+1 💡</span>
-        </button>
-      )}
+      <button className="btn more" onClick={() => setMenu(true)}>
+        ☰ Mehr
+        {(props.invited || left > 0) && <span className="dot" />}
+      </button>
 
-      <div className="quick">
-        <button className="btn" onClick={props.onDesigns}>
-          <span className="ico">🎨</span>Designs
-        </button>
-        <button className="btn" onClick={props.onInvite}>
-          <span className="ico">👥</span>Freunde
-        </button>
-        <button className="btn" onClick={props.onRules}>
-          <span className="ico">❓</span>Regeln
-        </button>
-        {props.onAccount && (
-          <button className="btn" onClick={props.onAccount}>
-            <span className="ico">👤</span>
-            {props.loggedIn ? 'Konto ✓' : 'Konto'}
-          </button>
-        )}
-      </div>
-    </>
+      {menu && (
+        <div className="overlay sheet-overlay" onClick={() => setMenu(false)}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-grip" />
+            {left > 0 && (
+              <button className="card video-offer chunky" onClick={pick(props.onJokerAd)}>
+                <span className="ico">🎬</span>
+                <span style={{ flex: 1 }}>
+                  Gratis-Joker
+                  <small>
+                    Kurzes Video ansehen · {left}/{AD_JOKERS_PER_DAY} heute
+                  </small>
+                </span>
+                <span className="pill">+1 💡</span>
+              </button>
+            )}
+            <div className="quick">
+              <button className="btn" onClick={pick(props.onDesigns)}>
+                <span className="ico">🎨</span>Designs
+              </button>
+              <button className="btn" onClick={pick(props.onInvite)}>
+                <span className="ico">👥</span>Freunde
+              </button>
+              <button className="btn" onClick={pick(props.onTrack)}>
+                <span className="ico">🎁</span>Pfad
+              </button>
+              <button className="btn" onClick={pick(props.onRules)}>
+                <span className="ico">❓</span>Regeln
+              </button>
+              {props.onAccount && (
+                <button className="btn" onClick={pick(props.onAccount)}>
+                  <span className="ico">👤</span>
+                  {props.loggedIn ? 'Konto ✓' : 'Konto'}
+                </button>
+              )}
+            </div>
+            <button className="btn" onClick={() => setMenu(false)}>
+              Schließen
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
