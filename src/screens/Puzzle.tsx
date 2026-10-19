@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import type { GainXp } from '../App'
 import { evaluate, evaluatePartial, OP_LABEL } from '../core/expr'
 import { generatePuzzle, puzzleDifficulty } from '../core/generator'
-import { levelFromXp, puzzleXp, type Progress } from '../core/progress'
+import { adsLeft, levelFromXp, puzzleXp, type Progress } from '../core/progress'
+import { showRewardedAd } from '../core/ads'
 import { solve, type Puzzle } from '../core/solver'
 import { TargetCircle, TopBar } from '../components/Ui'
 
@@ -10,6 +11,7 @@ interface Props {
   progress: Progress
   setProgress: Dispatch<SetStateAction<Progress>>
   gainXp: GainXp
+  onJokerAd: () => void
   onBack: () => void
 }
 
@@ -27,13 +29,14 @@ const slotAt = (x: number, y: number): number | null => {
   return el ? Number(el.dataset.slot) : null
 }
 
-export default function PuzzleScreen({ progress, setProgress, gainXp, onBack }: Props) {
+export default function PuzzleScreen({ progress, setProgress, gainXp, onJokerAd, onBack }: Props) {
   const level = levelFromXp(progress.xp)
   const [puzzle, setPuzzle] = useState<Puzzle>(() => generatePuzzle(level, progress.unlocks))
   const [place, setPlace] = useState<(number | null)[]>(() => new Array(puzzle.ops.length + 1).fill(null))
   const [startedAt, setStartedAt] = useState(() => Date.now())
   const [usedJoker, setUsedJoker] = useState(false)
-  const [won, setWon] = useState<{ xp: number; seconds: number } | null>(null)
+  const [won, setWon] = useState<{ xp: number; seconds: number; doubled?: boolean } | null>(null)
+  const [jokerOffer, setJokerOffer] = useState(false)
   const [drag, setDrag] = useState<Drag | null>(null)
   const [over, setOver] = useState<number | null>(null)
 
@@ -128,8 +131,17 @@ export default function PuzzleScreen({ progress, setProgress, gainXp, onBack }: 
     }
   }
 
+  const doubleXp = async () => {
+    if (!won || won.doubled) return
+    if (await showRewardedAd(`+${won.xp} XP`)) {
+      gainXp(won.xp)
+      setWon({ ...won, doubled: true })
+    }
+  }
+
   const useJoker = () => {
-    if (progress.jokers <= 0 || won) return
+    if (won) return
+    if (progress.jokers <= 0) return setJokerOffer(true)
     const sols = solve(puzzle)
     if (!sols.length) return
     const cur = placeRef.current
@@ -171,7 +183,7 @@ export default function PuzzleScreen({ progress, setProgress, gainXp, onBack }: 
         title={`Stufe ${level}`}
         onBack={onBack}
         right={
-          <button className="pill" onClick={useJoker} disabled={progress.jokers <= 0 || !!won} aria-label="Hinweis-Joker benutzen">
+          <button className="pill" onClick={useJoker} disabled={!!won} aria-label="Joker benutzen">
             💡 {progress.jokers}
           </button>
         }
@@ -193,7 +205,7 @@ export default function PuzzleScreen({ progress, setProgress, gainXp, onBack }: 
         {pool.map((t) => (
           <div
             key={t}
-            className={`tile${drag?.active && drag.tile === t ? ' dragging' : ''}`}
+            className={`tile c${(t % 4) + 1}${drag?.active && drag.tile === t ? ' dragging' : ''}`}
             onPointerDown={(e) => onPointerDown(e, t)}
           >
             {puzzle.tiles[t]}
@@ -203,16 +215,16 @@ export default function PuzzleScreen({ progress, setProgress, gainXp, onBack }: 
 
       <div className="spacer" />
       <div className="row">
-        <button className="btn center" onClick={() => commit(new Array(place.length).fill(null))} disabled={!!won}>
+        <button className="btn" onClick={() => commit(new Array(place.length).fill(null))} disabled={!!won}>
           ↺ Leeren
         </button>
-        <button className="btn center" onClick={newPuzzle}>
+        <button className="btn" onClick={newPuzzle}>
           ⏭ Überspringen
         </button>
       </div>
 
       {drag?.active && (
-        <div className="tile ghost" style={{ left: drag.x, top: drag.y }}>
+        <div className={`tile ghost c${(drag.tile % 4) + 1}`} style={{ left: drag.x, top: drag.y }}>
           {puzzle.tiles[drag.tile]}
         </div>
       )}
@@ -220,17 +232,48 @@ export default function PuzzleScreen({ progress, setProgress, gainXp, onBack }: 
       {won && (
         <div className="overlay">
           <div className="modal">
-            <div style={{ fontSize: 48 }}>🎯</div>
+            <div className="big-icon">🎯</div>
             <h2>Treffer!</h2>
             <p>
               {formatCalc(puzzle, place)} = {puzzle.target}
             </p>
-            <div className="big-xp">+{won.xp} XP</div>
+            <div className="big-xp">+{won.doubled ? won.xp * 2 : won.xp} XP</div>
             <p>
               {won.seconds} Sekunden{usedJoker ? ' · mit Joker' : ''}
             </p>
-            <button className="btn primary center" onClick={newPuzzle}>
+            {!won.doubled && (
+              <button className="btn accent" onClick={doubleXp}>
+                🎬 XP verdoppeln
+              </button>
+            )}
+            <button className="btn primary" onClick={newPuzzle}>
               Nächstes Rätsel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {jokerOffer && (
+        <div className="overlay" onClick={() => setJokerOffer(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="big-icon">💡</div>
+            <h2>Keine Joker mehr</h2>
+            <p>Ein Joker setzt eine Zahl an die richtige Stelle.</p>
+            {adsLeft(progress) > 0 ? (
+              <button
+                className="btn accent"
+                onClick={() => {
+                  setJokerOffer(false)
+                  onJokerAd()
+                }}
+              >
+                🎬 Video ansehen: +1 Joker
+              </button>
+            ) : (
+              <p>Für heute sind alle Gratis-Joker aufgebraucht. Neue gibt es auf dem Belohnungspfad.</p>
+            )}
+            <button className="btn" onClick={() => setJokerOffer(false)}>
+              Schließen
             </button>
           </div>
         </div>
@@ -263,7 +306,7 @@ function SlotWithOp({
         {mod === 'sqrt' && <span className="mod sqrt">√</span>}
         {tile !== null && (
           <div
-            className={`tile${drag?.active && drag.tile === tile ? ' dragging' : ''}`}
+            className={`tile c${(tile % 4) + 1}${drag?.active && drag.tile === tile ? ' dragging' : ''}`}
             onPointerDown={(e) => onPointerDown(e, tile)}
           >
             {puzzle.tiles[tile]}

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { evaluate, evaluatePartial } from './expr'
 import { solve } from './solver'
 import { generatePuzzle, type Unlocks } from './generator'
-import { addXp, initialProgress, levelFromXp, mergeProgress, nextReward, xpForLevel } from './progress'
+import { addXp, adsLeft, claimable, claimReward, countAd, initialProgress, levelFromXp, mergeProgress, nextReward, normalize, xpForLevel } from './progress'
 import { compare, randomTarget, rollDie, throwsFor } from './duel'
 import { botChoice, type BotLevel } from './bot'
 
@@ -65,24 +65,47 @@ describe('generator', () => {
 })
 
 describe('progress', () => {
-  it('Stufen und Belohnungen', () => {
+  it('Stufen und Belohnungen werden abgeholt', () => {
     expect(levelFromXp(0)).toBe(1)
     expect(levelFromXp(xpForLevel(5))).toBe(5)
     const { progress, levelUps } = addXp(initialProgress(), xpForLevel(7))
     expect(levelUps).toEqual([2, 3, 4, 5, 6, 7])
-    expect(progress.unlocks.div).toBe(true)
-    expect(progress.themes).toContain('ozean')
-    expect(progress.dice).not.toContain('holz')
-    expect(progress.jokers).toBe(2)
+    // noch nichts vergeben, aber abholbar
+    expect(progress.unlocks.div).toBe(false)
+    expect(claimable(progress)).toEqual([3, 5, 7])
+    let p = claimReward(progress, 7)
+    p = claimReward(p, 5)
+    p = claimReward(p, 3)
+    p = claimReward(p, 3) // doppelt abholen geht nicht
+    expect(p.unlocks.div).toBe(true)
+    expect(p.themes).toContain('ozean')
+    expect(p.jokers).toBe(2)
+    expect(claimable(p)).toEqual([])
+    expect(claimReward(p, 9)).toBe(p) // noch nicht erreicht
+  })
+  it('alter Spielstand wird übernommen', () => {
+    const old = { xp: xpForLevel(9), jokers: 4, themes: ['nacht'], theme: 'nacht', dice: ['klassik', 'holz'] }
+    const p = normalize(old)
+    expect(p.claimed).toEqual([3, 5, 7, 9])
+    expect(p.themes).toEqual(['bunt', 'ozean'])
+    expect(p.theme).toBe('bunt')
+    expect(p.unlocks.div).toBe(true)
+    expect(p.jokers).toBe(4)
+  })
+  it('Werbevideos pro Tag begrenzt', () => {
+    let p = initialProgress()
+    for (let i = 0; i < 5; i++) p = countAd(p, '2026-10-19')
+    expect(adsLeft(p, '2026-10-19')).toBe(0)
+    expect(adsLeft(p, '2026-10-20')).toBe(5)
   })
   it('Spielstände zusammenführen verliert nichts', () => {
-    const local = { ...initialProgress(), xp: 300, solved: 10, themes: ['nacht', 'ozean'] as const }
+    const local = { ...initialProgress(), xp: 300, solved: 10, themes: ['bunt', 'ozean'] as const }
     const remote = { ...initialProgress(), xp: 500, solved: 4, jokers: 4, dice: ['klassik', 'holz'] as const, unlocks: { div: true, sq: false, sqrt: false } }
     const m = mergeProgress({ ...local, themes: [...local.themes] }, { ...remote, dice: [...remote.dice] })
     expect(m.xp).toBe(500)
     expect(m.solved).toBe(10)
     expect(m.jokers).toBe(4)
-    expect(m.themes).toEqual(['nacht', 'ozean'])
+    expect(m.themes).toEqual(['bunt', 'ozean'])
     expect(m.dice).toEqual(['klassik', 'holz'])
     expect(m.unlocks.div).toBe(true)
   })

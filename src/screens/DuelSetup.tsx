@@ -1,6 +1,13 @@
 import type { Opponent } from '../App'
 import { TopBar } from '../components/Ui'
 
+const OPTIONS: { o: Opponent; icon: string; title: string; text: string; color: string }[] = [
+  { o: { kind: 'bot', level: 'leicht' }, icon: '🙂', title: 'Bot · leicht', text: 'Würfelt aus dem Bauch', color: 'var(--t2)' },
+  { o: { kind: 'bot', level: 'mittel' }, icon: '🤔', title: 'Bot · mittel', text: 'Hat eine Faustregel', color: 'var(--t3)' },
+  { o: { kind: 'bot', level: 'schwer' }, icon: '🤖', title: 'Bot · schwer', text: 'Rechnet jede Chance aus', color: 'var(--t1)' },
+  { o: { kind: 'local' }, icon: '👥', title: '2 Spieler, 1 Handy', text: 'Abwechselnd würfeln', color: 'var(--t4)' },
+]
+
 export default function DuelSetup({ onBack, onStart }: { onBack: () => void; onStart: (o: Opponent) => void }) {
   return (
     <>
@@ -8,32 +15,18 @@ export default function DuelSetup({ onBack, onStart }: { onBack: () => void; onS
       <p className="rule">
         Würfle, wähle <b>×1</b> oder <b>×10</b> und komm so nah wie möglich an die Zielzahl – aber nicht drüber!
       </p>
-      <div className="section-title">Gegen den Bot</div>
-      <button className="btn" onClick={() => onStart({ kind: 'bot', level: 'leicht' })}>
-        <span className="emoji">🙂</span>
-        <span>
-          Leicht<small>Würfelt eher aus dem Bauch</small>
-        </span>
-      </button>
-      <button className="btn" onClick={() => onStart({ kind: 'bot', level: 'mittel' })}>
-        <span className="emoji">🤔</span>
-        <span>
-          Mittel<small>Hat eine Faustregel</small>
-        </span>
-      </button>
-      <button className="btn" onClick={() => onStart({ kind: 'bot', level: 'schwer' })}>
-        <span className="emoji">🤖</span>
-        <span>
-          Schwer<small>Rechnet jede Wahrscheinlichkeit aus</small>
-        </span>
-      </button>
-      <div className="section-title">Zu zweit</div>
-      <button className="btn" onClick={() => onStart({ kind: 'local' })}>
-        <span className="emoji">👥</span>
-        <span>
-          2 Spieler, 1 Handy<small>Abwechselnd würfeln</small>
-        </span>
-      </button>
+      {OPTIONS.map(({ o, icon, title, text, color }) => (
+        <button key={title} className="btn opt" onClick={() => onStart(o)}>
+          <span className="opt-ico" style={{ background: color }}>
+            {icon}
+          </span>
+          <span className="opt-text">
+            {title}
+            <small>{text}</small>
+          </span>
+          <span className="muted">›</span>
+        </button>
+      ))}
     </>
   )
 }

@@ -43,8 +43,8 @@ export default function Account({ user, sync, onBack }: Props) {
       <TopBar title="Konto" onBack={onBack} />
       {user ? (
         <>
-          <div className="xp">
-            <div className="xp-head">
+          <div className="card">
+            <div>
               <b>Angemeldet</b>
             </div>
             <div className="text">{user.email}</div>
@@ -53,7 +53,7 @@ export default function Account({ user, sync, onBack }: Props) {
             </p>
           </div>
           <p className="rule">Melde dich auf einem anderen Handy mit derselben E-Mail an – dein Fortschritt ist dann auch dort.</p>
-          <button className="btn center" onClick={() => supabase?.auth.signOut()}>
+          <button className="btn" onClick={() => supabase?.auth.signOut()}>
             Abmelden
           </button>
         </>
@@ -73,10 +73,10 @@ export default function Account({ user, sync, onBack }: Props) {
             onChange={(e) => setPassword(e.target.value)}
           />
           {msg && <p className={`rule${msg.bad ? ' bad-text' : ''}`}>{msg.text}</p>}
-          <button className="btn primary center" disabled={busy} onClick={() => run('login')}>
+          <button className="btn primary" disabled={busy} onClick={() => run('login')}>
             Anmelden
           </button>
-          <button className="btn center" disabled={busy} onClick={() => run('signup')}>
+          <button className="btn" disabled={busy} onClick={() => run('signup')}>
             Neues Konto erstellen
           </button>
           <p className="rule">Dein bisheriger Fortschritt auf diesem Gerät bleibt erhalten und wird ins Konto übernommen.</p>

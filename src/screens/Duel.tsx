@@ -128,7 +128,7 @@ export default function DuelScreen({ opponent, diceSkin, gainXp, onBack }: Props
             {Array.from({ length: g.n }, (_, i) => {
               const v = g.cells[p][i]
               return (
-                <div key={i} className={`cell${v !== undefined && v >= 10 ? ' ten' : ''}`}>
+                <div key={i} className={`cell${v === undefined ? '' : v >= 10 ? ' ten' : ' one'}`}>
                   {v ?? ''}
                 </div>
               )
@@ -141,15 +141,15 @@ export default function DuelScreen({ opponent, diceSkin, gainXp, onBack }: Props
         <div className="turn">{turnText}</div>
         <Die value={face} skin={diceSkin} rolling={g.phase === 'rolling'} />
         {!botTurn && g.phase === 'roll' && (
-          <button className="btn primary center" style={{ width: '100%' }} onClick={startRoll}>
+          <button className="btn primary" style={{ width: '100%' }} onClick={startRoll}>
             🎲 Würfeln
           </button>
         )}
         {!botTurn && g.phase === 'choose' && g.roll !== null && (
           <div className="row" style={{ width: '100%' }}>
             {([1, 10] as Factor[]).map((f) => (
-              <button key={f} className={`btn center${f === 10 ? ' primary' : ''}`} onClick={() => choose(f)}>
-                <span>
+              <button key={f} className={`btn${f === 10 ? ' primary' : ''}`} onClick={() => choose(f)}>
+                <span style={{ display: 'flex', flexDirection: 'column' }}>
                   ×{f} = {g.roll! * f}
                   <small>Summe {sums[g.cur] + g.roll! * f}</small>
                 </span>
@@ -162,7 +162,7 @@ export default function DuelScreen({ opponent, diceSkin, gainXp, onBack }: Props
       {g.phase === 'done' && result !== null && (
         <div className="overlay">
           <div className="modal">
-            <div style={{ fontSize: 48 }}>{result === 0 ? '🤝' : opponent.kind === 'bot' ? (result === 1 ? '🏆' : '😅') : '🏆'}</div>
+            <div className="big-icon">{result === 0 ? '🤝' : opponent.kind === 'bot' ? (result === 1 ? '🏆' : '😅') : '🏆'}</div>
             <h2>
               {result === 0
                 ? 'Unentschieden'
@@ -178,10 +178,10 @@ export default function DuelScreen({ opponent, diceSkin, gainXp, onBack }: Props
                 {names[p]}: {sums[p]} {sums[p] > g.target ? `(${sums[p] - g.target} drüber)` : `(${g.target - sums[p]} daneben)`}
               </div>
             ))}
-            <button className="btn primary center" onClick={again}>
+            <button className="btn primary" onClick={again}>
               Nochmal
             </button>
-            <button className="btn center" onClick={onBack}>
+            <button className="btn" onClick={onBack}>
               Anderer Gegner
             </button>
           </div>

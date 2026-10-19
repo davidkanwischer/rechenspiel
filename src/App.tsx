@@ -1,14 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { addXp, levelFromXp, loadProgress, mergeProgress, rewardsFor, saveProgress, type Progress, type Reward } from './core/progress'
+import {
+  addXp,
+  adsLeft,
+  countAd,
+  levelFromXp,
+  loadProgress,
+  mergeProgress,
+  rewardsFor,
+  saveProgress,
+  type Progress,
+} from './core/progress'
 import { cloudEnabled, loadRemote, saveRemote, supabase } from './core/cloud'
+import { showRewardedAd } from './core/ads'
 import type { BotLevel } from './core/bot'
-import { LevelUpModal } from './components/Ui'
+import { AdBanner, AdHost, LevelUpModal } from './components/Ui'
 import Home from './screens/Home'
 import PuzzleScreen from './screens/Puzzle'
 import DuelSetup from './screens/DuelSetup'
 import DuelScreen from './screens/Duel'
-import Rewards from './screens/Rewards'
+import Track from './screens/Track'
+import Designs from './screens/Designs'
 import Rules from './screens/Rules'
 import Account, { type SyncState } from './screens/Account'
 
@@ -20,14 +32,15 @@ type Screen =
   | { id: 'puzzle' }
   | { id: 'duelSetup' }
   | { id: 'duel'; opponent: Opponent }
-  | { id: 'rewards' }
+  | { id: 'track' }
+  | { id: 'designs' }
   | { id: 'rules' }
   | { id: 'account' }
 
 export default function App() {
   const [progress, setProgress] = useState<Progress>(loadProgress)
   const [screen, setScreen] = useState<Screen>({ id: 'home' })
-  const [levelUp, setLevelUp] = useState<{ levels: number[]; rewards: Reward[] } | null>(null)
+  const [levelUp, setLevelUp] = useState<{ level: number; hasReward: boolean } | null>(null)
 
   useEffect(() => saveProgress(progress), [progress])
   useEffect(() => {
@@ -40,16 +53,22 @@ export default function App() {
     setProgress((p) => addXp(extra ? extra(p) : p, amount).progress)
   }, [])
 
-  // Stufenaufstieg erkennen und Belohnungen anzeigen
+  // Werbevideo nach Wahl: +1 Joker (begrenzt pro Tag)
+  const watchJokerAd = useCallback(async () => {
+    if (adsLeft(progress) <= 0) return
+    if (await showRewardedAd('1× Joker')) setProgress((p) => countAd({ ...p, jokers: p.jokers + 1 }))
+  }, [progress])
+
+  // Stufenaufstieg erkennen
   const level = levelFromXp(progress.xp)
   const lastLevel = useRef(level)
   const silentLevel = useRef(false) // beim Laden aus dem Konto kein Stufen-Popup
   useEffect(() => {
     if (silentLevel.current) silentLevel.current = false
     else if (level > lastLevel.current) {
-      const levels: number[] = []
-      for (let l = lastLevel.current + 1; l <= level; l++) levels.push(l)
-      setLevelUp({ levels, rewards: levels.flatMap(rewardsFor) })
+      let hasReward = false
+      for (let l = lastLevel.current + 1; l <= level; l++) if (rewardsFor(l).length) hasReward = true
+      setLevelUp({ level, hasReward })
     }
     lastLevel.current = level
   }, [level])
@@ -97,30 +116,53 @@ export default function App() {
     return () => clearTimeout(t)
   }, [progress, user])
 
-  const home = () => setScreen({ id: 'home' })
+  const go = (s: Screen) => {
+    setScreen(s)
+    window.scrollTo(0, 0)
+  }
+  const home = () => go({ id: 'home' })
 
   return (
     <div className="app">
-      {screen.id === 'home' && (
-        <Home
-          progress={progress}
-          onPuzzle={() => setScreen({ id: 'puzzle' })}
-          onDuel={() => setScreen({ id: 'duelSetup' })}
-          onRewards={() => setScreen({ id: 'rewards' })}
-          onRules={() => setScreen({ id: 'rules' })}
-          onAccount={cloudEnabled ? () => setScreen({ id: 'account' }) : undefined}
-          accountLabel={user ? '👤 Konto ✓' : '👤 Konto (optional)'}
+      <div className="screen">
+        {screen.id === 'home' && (
+          <Home
+            progress={progress}
+            loggedIn={!!user}
+            onPuzzle={() => go({ id: 'puzzle' })}
+            onDuel={() => go({ id: 'duelSetup' })}
+            onTrack={() => go({ id: 'track' })}
+            onDesigns={() => go({ id: 'designs' })}
+            onRules={() => go({ id: 'rules' })}
+            onAccount={cloudEnabled ? () => go({ id: 'account' }) : undefined}
+            onJokerAd={watchJokerAd}
+          />
+        )}
+        {screen.id === 'puzzle' && (
+          <PuzzleScreen progress={progress} setProgress={setProgress} gainXp={gainXp} onJokerAd={watchJokerAd} onBack={home} />
+        )}
+        {screen.id === 'duelSetup' && <DuelSetup onBack={home} onStart={(opponent) => go({ id: 'duel', opponent })} />}
+        {screen.id === 'duel' && (
+          <DuelScreen opponent={screen.opponent} diceSkin={progress.diceSkin} gainXp={gainXp} onBack={() => go({ id: 'duelSetup' })} />
+        )}
+        {screen.id === 'track' && <Track progress={progress} setProgress={setProgress} onBack={home} />}
+        {screen.id === 'designs' && <Designs progress={progress} setProgress={setProgress} onBack={home} />}
+        {screen.id === 'rules' && <Rules onBack={home} />}
+        {screen.id === 'account' && <Account user={user} sync={sync} onBack={home} />}
+      </div>
+      <AdBanner />
+      <AdHost />
+      {levelUp && (
+        <LevelUpModal
+          level={levelUp.level}
+          hasReward={levelUp.hasReward}
+          onClose={() => setLevelUp(null)}
+          onGoTrack={() => {
+            setLevelUp(null)
+            go({ id: 'track' })
+          }}
         />
       )}
-      {screen.id === 'puzzle' && <PuzzleScreen progress={progress} setProgress={setProgress} gainXp={gainXp} onBack={home} />}
-      {screen.id === 'duelSetup' && <DuelSetup onBack={home} onStart={(opponent) => setScreen({ id: 'duel', opponent })} />}
-      {screen.id === 'duel' && (
-        <DuelScreen opponent={screen.opponent} diceSkin={progress.diceSkin} gainXp={gainXp} onBack={() => setScreen({ id: 'duelSetup' })} />
-      )}
-      {screen.id === 'rewards' && <Rewards progress={progress} setProgress={setProgress} onBack={home} />}
-      {screen.id === 'rules' && <Rules onBack={home} />}
-      {screen.id === 'account' && <Account user={user} sync={sync} onBack={home} />}
-      {levelUp && <LevelUpModal levels={levelUp.levels} rewards={levelUp.rewards} onClose={() => setLevelUp(null)} />}
     </div>
   )
 }
