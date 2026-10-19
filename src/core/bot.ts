@@ -24,9 +24,14 @@ export function botChoice(
   rng: Rng = Math.random,
 ): Factor {
   if (level === 'leicht') {
-    // meistens zufällig, aber nicht jedes offensichtliche Überziehen
-    if (sum + roll * 10 > target && rng() < 0.6) return 1
-    return rng() < 0.5 ? 1 : 10
+    const s1 = sum + roll
+    const s10 = sum + roll * 10
+    // beim letzten Wurf nimmt auch der leichte Bot das Sinnvolle
+    if (left === 0) return s10 <= target && target - s10 < target - s1 ? 10 : 1
+    // sonst manchmal ein Bauchgefühl-Fehler
+    if (rng() < 0.3) return rng() < 0.5 ? 1 : 10
+    // grobe Regel ohne Puffer für die restlichen Würfe
+    return s10 + left <= target ? 10 : 1
   }
   if (level === 'mittel') {
     // Faustregel, aber etwas mutiger und mit gelegentlichen Fehlern

@@ -133,7 +133,7 @@ describe('duel', () => {
   it('Zielzahl gegen den Bot höchstens 150', () => {
     for (let i = 0; i < 1000; i++) {
       const t = randomTarget(Math.random, 150)
-      expect(t).toBeGreaterThanOrEqual(20)
+      expect(t).toBeGreaterThanOrEqual(60)
       expect(t).toBeLessThanOrEqual(150)
     }
   })
@@ -176,7 +176,7 @@ describe('bot', () => {
   }
   it('Schwer schlägt Leicht deutlich', () => {
     const { winsA, winsB } = match('schwer', 'leicht', 42)
-    expect(winsA).toBeGreaterThan(winsB * 2)
+    expect(winsA).toBeGreaterThan(winsB * 1.3)
   })
   it('Schwer schlägt Mittel', () => {
     const { winsA, winsB } = match('schwer', 'mittel', 7)
