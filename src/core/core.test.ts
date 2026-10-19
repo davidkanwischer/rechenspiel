@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { evaluate, evaluatePartial } from './expr'
 import { solve } from './solver'
 import { generatePuzzle, type Unlocks } from './generator'
-import { addXp, adsLeft, claimable, claimReward, countAd, initialProgress, levelFromXp, mergeProgress, nextReward, normalize, xpForLevel } from './progress'
+import { addXp, adsLeft, claimable, claimReward, countAd, initialProgress, levelFromXp, mergeProgress, nextReward, normalize, puzzleXp, xpForLevel } from './progress'
 import { compare, randomTarget, rollDie, throwsFor } from './duel'
 import { botChoice, type BotLevel } from './bot'
 
@@ -91,6 +91,13 @@ describe('progress', () => {
     expect(p.theme).toBe('bunt')
     expect(p.unlocks.div).toBe(true)
     expect(p.jokers).toBe(4)
+  })
+  it('falsche Versuche senken die XP, mindestens 20 % bleiben', () => {
+    expect(puzzleXp(5, 0, false)).toBe(30)
+    expect(puzzleXp(5, 1, false)).toBe(23)
+    expect(puzzleXp(5, 2, false)).toBe(15)
+    expect(puzzleXp(5, 10, false)).toBe(6)
+    expect(puzzleXp(5, 0, true)).toBe(15)
   })
   it('Werbevideos pro Tag begrenzt', () => {
     let p = initialProgress()

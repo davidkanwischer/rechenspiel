@@ -1314,3 +1314,41 @@ button {
   color: var(--muted);
   opacity: 1;
 }
+
+/* XP-Anzeige im Rätsel */
+.xp-chip {
+  align-self: center;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 16px;
+  font-weight: 900;
+  margin-bottom: -4px;
+}
+.xp-chip small {
+  font-size: 13px;
+  color: var(--bad);
+}
+.xp-chip.lowered {
+  animation: drop 0.5s;
+}
+@keyframes drop {
+  30% {
+    transform: scale(0.85);
+    color: var(--bad);
+  }
+}
+.slots.shake {
+  animation: shakeX 0.4s;
+}
+@keyframes shakeX {
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+  40%,
+  80% {
+    transform: translateX(8px);
+  }
+}

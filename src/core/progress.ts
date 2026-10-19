@@ -162,14 +162,20 @@ export function claimReward(p: Progress, level: number): Progress {
   return { ...applyRewards(p, rewards), claimed: [...p.claimed, level] }
 }
 
-/** XP für ein gelöstes Rätsel. */
-export function puzzleXp(difficulty: number, seconds: number, usedJoker: boolean): number {
-  let xp = 10 + difficulty * 4
-  if (seconds < 20) xp = Math.round(xp * 1.3)
-  else if (seconds < 45) xp = Math.round(xp * 1.1)
-  if (usedJoker) xp = Math.round(xp * 0.5)
-  return xp
+/** Jeder falsche Versuch kostet ein Viertel der XP, mindestens 20 % bleiben. */
+export const WRONG_PENALTY = 0.25
+export const MIN_XP_FACTOR = 0.2
+
+/** XP für ein Rätsel – wird schon während des Lösens oben angezeigt. */
+export function puzzleXp(difficulty: number, wrong: number, usedJoker: boolean): number {
+  const base = 10 + difficulty * 4
+  let factor = Math.max(MIN_XP_FACTOR, 1 - wrong * WRONG_PENALTY)
+  if (usedJoker) factor *= 0.5
+  return Math.max(1, Math.round(base * factor))
 }
+
+/** Bis zu dieser Stufe wird das Zwischenergebnis live angezeigt (Lernhilfe). */
+export const LIVE_RESULT_MAX_LEVEL = 3
 
 // Werbevideos nach Wahl: begrenzte Anzahl Gratis-Joker pro Tag
 export const AD_JOKERS_PER_DAY = 5

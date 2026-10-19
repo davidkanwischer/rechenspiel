@@ -26,8 +26,8 @@ const pickOne = <T,>(rng: Rng, arr: T[]): T => arr[Math.floor(rng() * arr.length
 /** Schwierigkeitsparameter aus der Spielerstufe (1, 2, 3, ...). */
 export function paramsFor(level: number, rng: Rng): GenParams {
   const L = Math.max(1, level)
-  const slots = L < 4 ? 3 : L < 9 ? (rng() < 0.5 ? 3 : 4) : L < 16 ? 4 : L < 25 ? (rng() < 0.6 ? 4 : 5) : 5
-  const decoys = L < 3 ? 0 : L < 8 ? 1 : L < 20 ? int(rng, 1, 2) : 2
+  const slots = L < 3 ? 3 : L < 6 ? (rng() < 0.5 ? 3 : 4) : L < 12 ? 4 : L < 20 ? (rng() < 0.5 ? 4 : 5) : 5
+  const decoys = L < 2 ? 1 : L < 5 ? int(rng, 1, 2) : 2
   return {
     slots,
     decoys,

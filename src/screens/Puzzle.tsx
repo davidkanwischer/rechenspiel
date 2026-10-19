@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import type { GainXp } from '../App'
 import { evaluate, evaluatePartial, OP_LABEL } from '../core/expr'
 import { generatePuzzle, puzzleDifficulty } from '../core/generator'
-import { adsLeft, levelFromXp, puzzleXp, type Progress } from '../core/progress'
+import { adsLeft, levelFromXp, LIVE_RESULT_MAX_LEVEL, puzzleXp, type Progress } from '../core/progress'
 import { showRewardedAd } from '../core/ads'
 import { solve, type Puzzle } from '../core/solver'
 import { TargetCircle, TopBar } from '../components/Ui'
@@ -35,6 +35,8 @@ export default function PuzzleScreen({ progress, setProgress, gainXp, onJokerAd,
   const [place, setPlace] = useState<(number | null)[]>(() => new Array(puzzle.ops.length + 1).fill(null))
   const [startedAt, setStartedAt] = useState(() => Date.now())
   const [usedJoker, setUsedJoker] = useState(false)
+  const [wrong, setWrong] = useState(0)
+  const [checked, setChecked] = useState<string | null>(null) // zuletzt geprüfte Belegung
   const [won, setWon] = useState<{ xp: number; seconds: number; doubled?: boolean } | null>(null)
   const [jokerOffer, setJokerOffer] = useState(false)
   const [drag, setDrag] = useState<Drag | null>(null)
@@ -50,22 +52,32 @@ export default function PuzzleScreen({ progress, setProgress, gainXp, onJokerAd,
     setPlace(new Array(p.ops.length + 1).fill(null))
     setStartedAt(Date.now())
     setUsedJoker(false)
+    setWrong(0)
+    setChecked(null)
     setWon(null)
   }
 
-  const commit = (next: (number | null)[]) => {
-    setPlace(next)
-    if (won || next.some((t) => t === null)) return
+  const commit = (next: (number | null)[]) => setPlace(next)
+
+  const potentialXp = puzzleXp(puzzleDifficulty(puzzle), wrong, usedJoker)
+  const placeKey = place.join(',')
+
+  /** Belegung prüfen: richtig → gewonnen, falsch → weniger XP. */
+  const check = () => {
+    if (won || place.some((t) => t === null) || checked === placeKey) return
     const value = evaluate(
-      next.map((t) => puzzle.tiles[t!]),
+      place.map((t) => puzzle.tiles[t!]),
       puzzle.ops,
       puzzle.mods,
     )
-    if (value !== puzzle.target) return
+    if (value !== puzzle.target) {
+      setWrong((w) => w + 1)
+      setChecked(placeKey)
+      return
+    }
     const seconds = Math.round((Date.now() - startedAt) / 1000)
-    const xp = puzzleXp(puzzleDifficulty(puzzle), seconds, usedJoker)
-    setWon({ xp, seconds })
-    gainXp(xp, (p) => ({ ...p, solved: p.solved + 1 }))
+    setWon({ xp: potentialXp, seconds })
+    gainXp(potentialXp, (p) => ({ ...p, solved: p.solved + 1 }))
   }
 
   /** Kachel in ein Kästchen legen (null = zurück in den Vorrat). Belegtes Ziel wird getauscht. */
@@ -162,16 +174,22 @@ export default function PuzzleScreen({ progress, setProgress, gainXp, onJokerAd,
   const nums = place.map((t) => (t === null ? null : puzzle.tiles[t]))
   const full = nums.every((n) => n !== null)
   const value = full ? evaluate(nums as number[], puzzle.ops, puzzle.mods) : evaluatePartial(nums, puzzle.ops, puzzle.mods)
-  const hit = full && value === puzzle.target
+  const live = level <= LIVE_RESULT_MAX_LEVEL
+  const hit = !!won
+  const wrongNow = checked === placeKey
   let resultText = ' '
   let resultClass = ''
-  if (nums.some((n) => n !== null)) {
+  if (wrongNow) {
+    resultText = live && value !== null ? `= ${value} – falsch!` : 'Leider falsch!'
+    resultClass = 'bad'
+  } else if (!live) {
+    resultText = full ? 'Fertig? Dann prüfen!' : ' '
+  } else if (nums.some((n) => n !== null)) {
     if (value === null) {
       resultText = nums[0] === null ? '…' : 'geht nicht glatt auf'
       resultClass = nums[0] === null ? '' : 'bad'
     } else if (full) {
-      resultText = hit ? `= ${value} ✓` : `= ${value}`
-      resultClass = hit ? 'hit' : 'bad'
+      resultText = `= ${value}`
     } else resultText = `= ${value} …`
   }
 
@@ -188,13 +206,16 @@ export default function PuzzleScreen({ progress, setProgress, gainXp, onJokerAd,
           </button>
         }
       />
+      <div className={`xp-chip${wrong ? ' lowered' : ''}`} key={potentialXp}>
+        🏅 {potentialXp} XP{wrong > 0 && <small> · {wrong}× falsch</small>}
+      </div>
       <TargetCircle value={puzzle.target} hit={hit} label="Ziel" />
       <div className="rule">
         Es gilt <b>Punkt vor Strich</b>
         {puzzle.tiles.length > puzzle.ops.length + 1 && ' · nicht jede Zahl wird gebraucht'}
       </div>
 
-      <div className="slots">
+      <div className={`slots${wrongNow ? ' shake' : ''}`} key={`s${wrong}`}>
         {place.map((t, i) => (
           <SlotWithOp key={i} i={i} puzzle={puzzle} tile={t} over={over === i} drag={drag} onPointerDown={onPointerDown} />
         ))}
@@ -214,6 +235,11 @@ export default function PuzzleScreen({ progress, setProgress, gainXp, onJokerAd,
       </div>
 
       <div className="spacer" />
+      {full && !won && (
+        <button className="btn primary" onClick={check} disabled={wrongNow}>
+          ✓ Prüfen
+        </button>
+      )}
       <div className="row">
         <button className="btn" onClick={() => commit(new Array(place.length).fill(null))} disabled={!!won}>
           ↺ Leeren
@@ -239,7 +265,9 @@ export default function PuzzleScreen({ progress, setProgress, gainXp, onJokerAd,
             </p>
             <div className="big-xp">+{won.doubled ? won.xp * 2 : won.xp} XP</div>
             <p>
-              {won.seconds} Sekunden{usedJoker ? ' · mit Joker' : ''}
+              {won.seconds} Sekunden
+              {wrong > 0 ? ` · ${wrong}× falsch` : ' · im 1. Versuch'}
+              {usedJoker ? ' · mit Joker' : ''}
             </p>
             {!won.doubled && (
               <button className="btn accent" onClick={doubleXp}>
